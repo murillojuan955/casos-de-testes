@@ -1,0 +1,70 @@
+import io.restassured.RestAssured;
+import io.restassured.response.Response;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.Assert;
+
+public class ReqresAPITest {
+
+    @Before
+    public void setup() {
+        // Configurar a URL base da API
+        RestAssured.baseURI = "https://reqres.in";
+    }
+
+    @Test
+    public void testListarUsuariosComSucesso() {
+        Response response = RestAssured
+                .get("/api/users?page=1");
+        
+        // Verifique se o status da resposta é 200 (sucesso)
+        Assert.assertEquals(200, response.getStatusCode());
+
+        // Verifique se a lista de usuários não está vazia
+        int totalUsuarios = response.path("data.size()");
+        Assert.assertTrue(totalUsuarios > 0);
+    }
+
+    @Test
+    public void testAcessarUsuarioInexistente() {
+        Response response = RestAssured
+                .get("/api/users/1000"); // ID de usuário inexistente
+        
+        // Verifique se o status da resposta é 404 (não encontrado)
+        Assert.assertEquals(404, response.getStatusCode());
+    }
+
+    @Test
+    public void testCriarUsuarioComSucesso() {
+        String requestBody = "{ \"name\": \"John Doe\", \"job\": \"QA Engineer\" }";
+
+        Response response = RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .body(requestBody)
+                .post("/api/users");
+        
+        // Verifique se o status da resposta é 201 (criado)
+        Assert.assertEquals(201, response.getStatusCode());
+
+        // Verifique se o ID do usuário criado foi retornado na resposta
+        Assert.assertNotNull(response.path("id"));
+    }
+
+    @Test
+    public void testCriarUsuarioComDadosInvalidos() {
+        String requestBody = "{ \"name\": \"\", \"job\": \"\" }"; // Dados inválidos
+
+        Response response = RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .body(requestBody)
+                .post("/api/users");
+        
+        // Verifique se o status da resposta é 400 (requisição inválida)
+        Assert.assertEquals(400, response.getStatusCode());
+
+        // Verifique se uma mensagem de erro é retornada na resposta
+        Assert.assertTrue(response.body().asString().contains("error"));
+    }
+}
